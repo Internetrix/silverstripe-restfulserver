@@ -119,7 +119,7 @@ class JSONDataFormatter extends DataFormatter
                     : $this->sanitiseClassName($className) . "/$id/$relName";
                 $href = Director::absoluteURL($rel);
 
-                if($childObj->getClassName() == 'SilverStripe\Assets\Image' || $childObj->getClassName() == 'SilverStripe\Assets\File') {
+                if($childObj->hasMethod('toMapCustom')) {
                     $serobj->$relName = ArrayData::array_to_object($childObj->toMapCustom());
                 }else{
                     $serobj->$relName = ArrayData::array_to_object($childObj->toMap());
@@ -150,11 +150,11 @@ class JSONDataFormatter extends DataFormatter
                 foreach ($items as $item) {
                     $rel = $this->config()->api_base . $this->sanitiseClassName($relClass) . "/$item->ID";
                     $href = Director::absoluteURL($rel);
-                    $innerParts[] = ArrayData::array_to_object(array(
-                        "className" => $relClass,
-                        "href" => "$href.json",
-                        "id" => $item->ID
-                    ));
+                    if($item->hasMethod('toMapCustom')) {
+                        $innerParts[] = ArrayData::array_to_object($item->toMapCustom());
+                    }else{
+                        $innerParts[] = ArrayData::array_to_object($item->toMap());
+                    }
                 }
                 $serobj->$relName = $innerParts;
             }
