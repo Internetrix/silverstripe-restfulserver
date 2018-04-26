@@ -294,11 +294,18 @@ class RestfulServer extends Controller
 
         if ($obj instanceof SS_List) {
             $objs = ArrayList::create($obj->toArray());
+            $permissionError = false;
             foreach ($objs as $obj) {
                 if (!$obj->canView($this->getMember())) {
                     $objs->remove($obj);
+                    $permissionError = true;
                 }
             }
+
+            if($objs->totalSize == 0 && $permissionError){
+                return $this->permissionFailure();
+            }
+
             $responseFormatter->setTotalSize($objs->count());
             return $responseFormatter->convertDataObjectSet($objs, $fields);
         }
