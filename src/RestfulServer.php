@@ -123,6 +123,32 @@ class RestfulServer extends Controller
     }
 
     /**
+     * Parse many many relation class (works with through array syntax)
+     *
+     * @param string|array $class
+     * @return string|array
+     */
+    public static function parseRelationClass($class)
+    {
+        // detect many many through syntax
+        if (is_array($class)
+            && array_key_exists('through', $class)
+            && array_key_exists('to', $class)
+        ) {
+            $toRelation = $class['to'];
+
+            $hasOne = Config::inst()->get($class['through'], 'has_one');
+            if (empty($hasOne) || !is_array($hasOne) || !array_key_exists($toRelation, $hasOne)) {
+                return $class;
+            }
+
+            return $hasOne[$toRelation];
+        }
+
+        return $class;
+    }
+
+    /**
      * This handler acts as the switchboard for the controller.
      * Since no $Action url-param is set, all requests are sent here.
      */
@@ -154,21 +180,25 @@ class RestfulServer extends Controller
         // authenticate through HTTP BasicAuth
         $this->member = $this->authenticate();
 
-        // handle different HTTP verbs
-        if ($this->request->isGET() || $this->request->isHEAD()) {
-            return $this->getHandler($className, $id, $relation);
-        }
+        try {
+            // handle different HTTP verbs
+            if ($this->request->isGET() || $this->request->isHEAD()) {
+                return $this->getHandler($className, $id, $relation);
+            }
 
-        if ($this->request->isPOST()) {
-            return $this->postHandler($className, $id, $relation);
-        }
+            if ($this->request->isPOST()) {
+                return $this->postHandler($className, $id, $relation);
+            }
 
-        if ($this->request->isPUT()) {
-            return $this->putHandler($className, $id, $relation);
-        }
+            if ($this->request->isPUT()) {
+                return $this->putHandler($className, $id, $relation);
+            }
 
-        if ($this->request->isDELETE()) {
-            return $this->deleteHandler($className, $id, $relation);
+            if ($this->request->isDELETE()) {
+                return $this->deleteHandler($className, $id, $relation);
+            }
+        } catch (\Exception $e) {
+            return $this->exceptionThrown($this->getRequestDataFormatter($className), $e);
         }
 
         // if no HTTP verb matches, return error
@@ -681,7 +711,11 @@ class RestfulServer extends Controller
         $this->getResponse()->setStatusCode(401);
         $this->getResponse()->addHeader('WWW-Authenticate', 'Basic realm="API Access"');
         $this->getResponse()->addHeader('Content-Type', 'text/plain');
-        return "You don't have access to this item through the API.";
+
+        $reponse = "You don't have access to this item through the API.";
+        $this->extend(__FUNCTION__, $reponse);
+
+        return $reponse;
     }
 
     /**
@@ -692,7 +726,11 @@ class RestfulServer extends Controller
         // return a 404
         $this->getResponse()->setStatusCode(404);
         $this->getResponse()->addHeader('Content-Type', 'text/plain');
-        return "That object wasn't found";
+
+        $reponse = "That object wasn't found";
+        $this->extend(__FUNCTION__, $reponse);
+
+        return $reponse;
     }
 
     /**
@@ -702,7 +740,11 @@ class RestfulServer extends Controller
     {
         $this->getResponse()->setStatusCode(405);
         $this->getResponse()->addHeader('Content-Type', 'text/plain');
-        return "Method Not Allowed";
+
+        $reponse = "Method Not Allowed";
+        $this->extend(__FUNCTION__, $reponse);
+
+        return $reponse;
     }
 
     /**
@@ -712,7 +754,11 @@ class RestfulServer extends Controller
     {
         $this->response->setStatusCode(415); // Unsupported Media Type
         $this->getResponse()->addHeader('Content-Type', 'text/plain');
-        return "Unsupported Media Type";
+
+        $reponse = "Unsupported Media Type";
+        $this->extend(__FUNCTION__, $reponse);
+
+        return $reponse;
     }
 
     /**
@@ -728,6 +774,28 @@ class RestfulServer extends Controller
             'type' => ValidationException::class,
             'messages' => $result->getMessages(),
         ];
+
+        $this->extend(__FUNCTION__, $response, $result);
+
+        return $responseFormatter->convertArray($response);
+    }
+
+    /**
+     * @param DataFormatter $responseFormatter
+     * @param \Exception $e
+     * @return string
+     */
+    protected function exceptionThrown(DataFormatter $responseFormatter, \Exception $e)
+    {
+        $this->getResponse()->setStatusCode(500);
+        $this->getResponse()->addHeader('Content-Type', $responseFormatter->getOutputContentType());
+
+        $response = [
+            'type' => get_class($e),
+            'message' => $e->getMessage(),
+        ];
+
+        $this->extend(__FUNCTION__, $response, $e);
 
         return $responseFormatter->convertArray($response);
     }
@@ -760,6 +828,8 @@ class RestfulServer extends Controller
         $relations = (array)$obj->hasOne() + (array)$obj->hasMany() + (array)$obj->manyMany();
         if ($relations) {
             foreach ($relations as $relName => $relClass) {
+                $relClass = static::parseRelationClass($relClass);
+
                 //remove dot notation from relation names
                 $parts = explode('.', $relClass);
                 $relClass = array_shift($parts);

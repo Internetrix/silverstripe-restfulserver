@@ -2,7 +2,9 @@
 
 namespace SilverStripe\RestfulServer\Tests;
 
+use SilverStripe\RestfulServer\RestfulServer;
 use SilverStripe\RestfulServer\Tests\Stubs\RestfulServerTestComment;
+use SilverStripe\RestfulServer\Tests\Stubs\RestfulServerTestExceptionThrown;
 use SilverStripe\RestfulServer\Tests\Stubs\RestfulServerTestSecretThing;
 use SilverStripe\RestfulServer\Tests\Stubs\RestfulServerTestPage;
 use SilverStripe\RestfulServer\Tests\Stubs\RestfulServerTestAuthor;
@@ -38,6 +40,8 @@ class RestfulServerTest extends SapphireTest
         RestfulServerTestPage::class,
         RestfulServerTestAuthor::class,
         RestfulServerTestAuthorRating::class,
+        RestfulServerTestValidationFailure::class,
+        RestfulServerTestExceptionThrown::class,
     ];
 
     protected function urlSafeClassname($classname)
@@ -684,5 +688,31 @@ class RestfulServerTest extends SapphireTest
         // Assumption: XML is default output
         $responseArr = Convert::xml2array($response->getBody());
         $this->assertEquals('SilverStripe\\ORM\\ValidationException', $responseArr['type']);
+    }
+
+    public function testExceptionThrownWithPOST()
+    {
+        $urlSafeClassname = $this->urlSafeClassname(RestfulServerTestExceptionThrown::class);
+        $url = "{$this->baseURI}/api/v1/$urlSafeClassname/";
+        $data = [
+            'Content' => 'Test',
+        ];
+        $response = Director::test($url, $data, null, 'POST');
+        // Assumption: XML is default output
+        $responseArr = Convert::xml2array($response->getBody());
+        $this->assertEquals(\Exception::class, $responseArr['type']);
+    }
+
+    public function testParseClassName()
+    {
+        $manyMany = RestfulServerTestAuthor::config()->get('many_many');
+
+        // simple syntax (many many standard)
+        $className = RestfulServer::parseRelationClass($manyMany['RelatedPages']);
+        $this->assertEquals(RestfulServerTestPage::class, $className);
+
+        // array syntax (many many through)
+        $className = RestfulServer::parseRelationClass($manyMany['SortedPages']);
+        $this->assertEquals(RestfulServerTestPage::class, $className);
     }
 }
