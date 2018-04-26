@@ -197,15 +197,18 @@ class RestfulServer extends Controller
             }
 
             if ($this->request->isPOST()) {
-                return $this->postHandler($className, $id, $relation);
+                return $this->methodNotAllowed();
+//                return $this->postHandler($className, $id, $relation);
             }
 
             if ($this->request->isPUT()) {
-                return $this->putHandler($className, $id, $relation);
+                return $this->methodNotAllowed();
+//                return $this->putHandler($className, $id, $relation);
             }
 
             if ($this->request->isDELETE()) {
-                return $this->deleteHandler($className, $id, $relation);
+                return $this->methodNotAllowed();
+//                return $this->deleteHandler($className, $id, $relation);
             }
         } catch (\Exception $e) {
             return $this->exceptionThrown($this->getRequestDataFormatter($className), $e);
