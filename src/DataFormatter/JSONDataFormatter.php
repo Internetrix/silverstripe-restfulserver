@@ -10,6 +10,7 @@ use SilverStripe\ORM\DataObjectInterface;
 use SilverStripe\Control\Director;
 use SilverStripe\ORM\SS_List;
 use SilverStripe\ORM\FieldType;
+use SilverStripe\Dev\Debug;
 
 /**
  * Formats a DataObject's member fields into a JSON string
@@ -109,17 +110,20 @@ class JSONDataFormatter extends DataFormatter
                     continue;
                 }
 
+                $childObj = $obj->$relName;
+
                 $fieldName = $relName . 'ID';
                 $rel = $this->config()->api_base;
                 $rel .= $obj->$fieldName
                     ? $this->sanitiseClassName($relClass) . '/' . $obj->$fieldName
                     : $this->sanitiseClassName($className) . "/$id/$relName";
                 $href = Director::absoluteURL($rel);
-                $serobj->$relName = ArrayData::array_to_object(array(
-                    "className" => $relClass,
-                    "href" => "$href.json",
-                    "id" => self::cast($obj->obj($fieldName))
-                ));
+
+                if($childObj->getClassName() == 'SilverStripe\Assets\Image' || $childObj->getClassName() == 'SilverStripe\Assets\File') {
+                    $serobj->$relName = ArrayData::array_to_object($childObj->toMapCustom());
+                }else{
+                    $serobj->$relName = ArrayData::array_to_object($childObj->toMap());
+                }
             }
 
             foreach ($obj->hasMany() + $obj->manyMany() as $relName => $relClass) {
