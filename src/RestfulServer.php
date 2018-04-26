@@ -13,6 +13,7 @@ use SilverStripe\ORM\SS_List;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\ORM\ValidationResult;
 use SilverStripe\Security\Member;
+use SilverStripe\Security\Permission;
 use SilverStripe\Security\Security;
 use SilverStripe\CMS\Model\SiteTree;
 
@@ -64,14 +65,14 @@ class RestfulServer extends Controller
      *
      * @var string
      */
-    private static $default_extension = "xml";
+    private static $default_extension = "json";
 
     /**
      * If no extension is given, resolve the request to this mimetype.
      *
      * @var string
      */
-    protected static $default_mimetype = "text/xml";
+    protected static $default_mimetype = "text/json";
 
     /**
      * @uses authenticate()
@@ -171,6 +172,7 @@ class RestfulServer extends Controller
             return $this->notFound();
         }
 
+
         // if api access is disabled, don't proceed
         $apiAccess = Config::inst()->get($className, 'api_access');
         if (!$apiAccess) {
@@ -179,6 +181,14 @@ class RestfulServer extends Controller
 
         // authenticate through HTTP BasicAuth
         $this->member = $this->authenticate();
+
+        if(!Permission::check('API_ACCESS', 'any', $this->member)){    // check if this user has correct permission
+            return $this->permissionFailure();
+        }
+
+        if(!$this->member->checkApiLimit()){    // check if this user has exceeded call limit
+            return $this->exceededLimit();
+        }
 
         try {
             // handle different HTTP verbs
@@ -292,18 +302,15 @@ class RestfulServer extends Controller
         $realFields = $responseFormatter->getRealFields($className, explode(',', $rawFields));
         $fields = $rawFields ? $realFields : null;
 
+        //log api call
+        $this->getMember()->recordApiCall();
+
         if ($obj instanceof SS_List) {
             $objs = ArrayList::create($obj->toArray());
-            $permissionError = false;
             foreach ($objs as $obj) {
                 if (!$obj->canView($this->getMember())) {
                     $objs->remove($obj);
-                    $permissionError = true;
                 }
-            }
-
-            if($objs->totalSize == 0 && $permissionError){
-                return $this->permissionFailure();
             }
 
             $responseFormatter->setTotalSize($objs->count());
@@ -735,6 +742,21 @@ class RestfulServer extends Controller
         $this->getResponse()->addHeader('Content-Type', 'text/plain');
 
         $reponse = "That object wasn't found";
+        $this->extend(__FUNCTION__, $reponse);
+
+        return $reponse;
+    }
+
+    /**
+     * @return string
+     */
+    protected function exceededLimit()
+    {
+        // return a 503
+        $this->getResponse()->setStatusCode(503 );
+        $this->getResponse()->addHeader('Content-Type', 'text/plain');
+
+        $reponse = "You have exceeded the daily API call limit.";
         $this->extend(__FUNCTION__, $reponse);
 
         return $reponse;
