@@ -314,6 +314,10 @@ class RestfulServer extends Controller
                 if (!$obj->canView($this->getMember())) {
                     $objs->remove($obj);
                 }
+                
+                if(!$obj->Verified){
+                    $objs->remove($obj);
+                }
             }
 
             $responseFormatter->setTotalSize($objs->count());
