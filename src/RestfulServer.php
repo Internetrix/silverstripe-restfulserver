@@ -268,6 +268,11 @@ class RestfulServer extends Controller
         $params = $this->request->getVars();
 
         $responseFormatter = $this->getResponseDataFormatter($className);
+        
+        if($className == 'Product'){
+            $responseFormatter->setRemoveFields(['SalePrice','Price']);
+        }
+        
         if (!$responseFormatter) {
             return $this->unsupportedMediaType();
         }
