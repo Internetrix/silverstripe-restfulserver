@@ -378,7 +378,7 @@ class RestfulServer extends Controller
         $contentTypeWithEncoding = $this->request->getHeader('Content-Type');
         preg_match('/([^;]*)/', $contentTypeWithEncoding, $contentTypeMatches);
         $contentType = $contentTypeMatches[0];
-        $accept = $this->request->getHeader('Accept');
+        $accept = null;
         $mimetypes = $this->request->getAcceptMimetypes();
         if (!$className) {
             $className = $this->unsanitiseClassName($this->request->param('ClassName'));
