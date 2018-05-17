@@ -320,7 +320,7 @@ class RestfulServer extends Controller
                     $objs->remove($obj);
                 }
                 
-                if(!$obj->Verified){
+                if($obj->hasField('Verified') && !$obj->Verified){
                     $objs->remove($obj);
                 }
             }
