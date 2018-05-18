@@ -270,7 +270,7 @@ class RestfulServer extends Controller
         $responseFormatter = $this->getResponseDataFormatter($className);
         
         if($className == 'Product'){
-            $responseFormatter->setRemoveFields(['SalePrice','Price']);
+            $responseFormatter->setRemoveFields(['SalePrice','Price','ChildSalePrice','ChildPrice']);
         }
         
         if (!$responseFormatter) {
