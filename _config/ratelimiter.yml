@@ -1,0 +1,16 @@
+---
+Name: ratelimiter-restful-server
+---
+SilverStripe\Core\Injector\Injector:
+  APIRateLimitMiddleware:
+    class: SilverStripe\Control\Middleware\RateLimitMiddleware
+    properties:
+      ExtraKey: 'APILimiter' # this isolates your rate limiter from others
+      MaxAttempts: 100 # how many attempts are allowed in a decay period
+      Decay: 1 # how long the decay period is in minutes
+  APIRateLimitedController:
+    class: SilverStripe\Control\Middleware\RequestHandlerMiddlewareAdapter
+    properties:
+      RequestHandler: '%$SilverStripe\RestfulServer\RestfulServer' # the fully qualified class name of your controller
+      Middlewares:
+        - '%$APIRateLimitMiddleware' # the rate limiter we just defined in the last step

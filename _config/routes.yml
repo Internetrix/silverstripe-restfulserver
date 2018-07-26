@@ -1,6 +1,8 @@
 ---
 Name: restfulserverroutes
+After:
+  - '#ratelimiter-restful-server'
 ---
 SilverStripe\Control\Director:
   rules:
-   'api/v1': 'SilverStripe\RestfulServer\RestfulServer'
+   'api/v1': '%$APIRateLimitedController'

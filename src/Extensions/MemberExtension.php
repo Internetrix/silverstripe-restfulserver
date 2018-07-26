@@ -15,7 +15,6 @@ class MemberExtension extends DataExtension
     private static $db = [
         'TotalAPIAllowed' => 'Int',
         'APICalled' => 'Int',   //used for daily api count
-        'APILimitCounted' => 'Int',   // limit call per minute
         'LastAPICalled' => 'Datetime'
     ];
 
@@ -24,11 +23,8 @@ class MemberExtension extends DataExtension
     ];
 
     private static $hidden_fields = [
-        'LastAPICalled',
-        'APILimitCounted'
+        'LastAPICalled'
     ];
-
-    private $API_LIMIT = 50;
 
     public function updateCMSFields(FieldList $fields)
     {
@@ -49,39 +45,26 @@ class MemberExtension extends DataExtension
 
     // check if limit exceeded, true if permit, false if exceeded
     public function checkApiLimit(){
-        // check limit every 1 minute to prevent spam
-        $now = DBDatetime::now()->getTimestamp();
-        $lastCall = strtotime('+1 minute',$this->owner->dbObject('LastAPICalled')->getTimestamp());
 
-        if($lastCall <= $now){
-            $this->owner->APILimitCounted = 0;
+        // check date if counter needs to be reset
+        $lastCallDateTS = strtotime($this->owner->dbObject('LastAPICalled')->Date());
+        $today = DBDatetime::now();
+        $todayTS = strtotime($today->Date());
+
+        if ($lastCallDateTS < $todayTS) {
+            $this->owner->APICalled = 0;
         }
 
-        ++$this->owner->APILimitCounted;
+        // record datetime api called
+        $this->owner->LastAPICalled = $today->getTimestamp();
         $this->owner->write();
 
-        if($this->owner->APILimitCounted <= $this->API_LIMIT) {
-            // check date if counter needs to be reset
-            $lastCallDateTS = strtotime($this->owner->dbObject('LastAPICalled')->Date());
-            $today = DBDatetime::now();
-            $todayTS = strtotime($today->Date());
-
-            if ($lastCallDateTS < $todayTS) {
-                $this->owner->APICalled = 0;
-            }
-
-            // record datetime api called
-            $this->owner->LastAPICalled = $today->getTimestamp();
-            $this->owner->write();
-
-            if (($this->owner->APICalled + 1) <= $this->owner->TotalAPIAllowed) {
-                return true;
-            } else {
-                return false;
-            }
-        }else{
+        if (($this->owner->APICalled + 1) <= $this->owner->TotalAPIAllowed) {
+            return true;
+        } else {
             return false;
         }
+
     }
 
 }
