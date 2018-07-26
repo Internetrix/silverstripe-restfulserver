@@ -1,0 +1,6 @@
+---
+Name: customextensions
+---
+SilverStripe\Security\Member:
+  extensions:
+    - MemberExtension
