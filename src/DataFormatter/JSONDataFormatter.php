@@ -11,6 +11,7 @@ use SilverStripe\Control\Director;
 use SilverStripe\ORM\SS_List;
 use SilverStripe\ORM\FieldType;
 use SilverStripe\Dev\Debug;
+use Silverstripe\SiteConfig\SiteConfig;
 
 /**
  * Formats a DataObject's member fields into a JSON string
@@ -91,7 +92,20 @@ class JSONDataFormatter extends DataFormatter
                 continue;
             }
 
+            if($fieldName == 'LegacyBookingURL' || $fieldName == 'LegacyVoucherURL'){   //dont include this field
+                continue;
+            }
+
             $fieldValue = self::cast($obj->obj($fieldName));
+
+            if(($fieldName == 'BookingURL' || $fieldName == 'VoucherURL') && SiteConfig::get()->first()->ExcoCartOrRespax == 'respax'){
+                if($fieldName == 'BookingURL'){
+                    $fieldValue = self::cast($obj->obj('LegacyBookingURL'));
+                }else if($fieldName == 'VoucherURL'){
+                    $fieldValue = self::cast($obj->obj('LegacyVoucherURL'));
+                }
+            }
+
             $mappedFieldName = $this->getFieldAlias($className, $fieldName);
             $serobj->$mappedFieldName = $fieldValue;
         }

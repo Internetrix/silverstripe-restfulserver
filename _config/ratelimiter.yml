@@ -6,7 +6,7 @@ SilverStripe\Core\Injector\Injector:
     class: SilverStripe\Control\Middleware\RateLimitMiddleware
     properties:
       ExtraKey: 'APILimiter' # this isolates your rate limiter from others
-      MaxAttempts: 100 # how many attempts are allowed in a decay period
+      MaxAttempts: 300 # how many attempts are allowed in a decay period
       Decay: 1 # how long the decay period is in minutes
   APIRateLimitedController:
     class: SilverStripe\Control\Middleware\RequestHandlerMiddlewareAdapter
