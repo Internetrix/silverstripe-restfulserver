@@ -144,6 +144,10 @@ to the url, e.g. /api/v1/(ClassName)/?Title=mytitle.
 - `&sort=<myfield>&dir=<asc|desc>`
 - `&add_fields=<string>`: Comma-separated list of additional fields, for example dynamic getters.
 
+## Rate limiter
+- Rate limiter's config is in `ratelimiter.yml`
+- Currently it is set to limit 300 API calls per minute.
+
 ## Access control
 
 Access control is implemented through the usual Member system with BasicAuth authentication only.
