@@ -59,7 +59,7 @@ class Article extends DataObject {
 }
 ```
 
-Example DataObject with custom variables to return:
+Add a toMapCustom() function if you want to customise the return variables:
 ```php
 public function toMapCustom(){     
         return array(
