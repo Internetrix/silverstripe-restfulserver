@@ -59,6 +59,24 @@ class Article extends DataObject {
 }
 ```
 
+Example DataObject with custom variables to return:
+```php
+public function toMapCustom(){     
+        return array(
+            'ID'    => $this->ID,
+            'Title' => $this->Title,
+            'ImageSquare' => [
+                'name' => $this->ImageSquare()->getTitle(),
+                'url' => $this->ImageSquare()->getAbsoluteURL()
+            ],
+            'Icon'  => [
+                'name' => $this->Icon()->getTitle(),
+                'url' => $this->Icon()->getAbsoluteURL()
+            ]
+        );
+ }
+```
+
 Example DataObject field mapping, allows aliasing fields so that public requests and responses display different field names:
 
 ```php
